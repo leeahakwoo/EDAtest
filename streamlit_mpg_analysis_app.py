@@ -1,40 +1,51 @@
-
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
 
-st.set_page_config(page_title="LLM 기반 자동차 연비 분석", layout="centered")
-
-st.title("🚗 자동차 데이터 연비 분석 (Streamlit + GPT)")
-st.markdown("""
-이 앱은 업로드한 CSV 데이터를 기반으로 제조 연도별 평균 연비를 분석하고 시각화합니다.
-또한 이상치(비정상적으로 낮은 연비)를 감지하여 강조합니다.
-""")
+st.set_page_config(page_title="다양한 자동차 데이터 분석", layout="wide")
+st.title("🚘 다양한 자동차 데이터 분석 데모")
 
 uploaded_file = st.file_uploader("CSV 파일을 업로드하세요", type=["csv"])
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
+    st.success("데이터 업로드 완료!")
+    st.write("### 🔍 데이터 미리보기")
+    st.dataframe(df.head())
 
-    # 연비와 연도 관련 컬럼 추출
-    if 'year' not in df.columns or 'mpg' not in df.columns:
-        st.error("데이터에 'year' 및 'mpg' 열이 포함되어 있어야 합니다.")
-    else:
-        st.subheader("📊 연도별 평균 연비")
-        year_avg = df.groupby('year')['mpg'].mean().reset_index()
+    # 기본 통계
+    st.write("### 📊 기본 통계")
+    st.dataframe(df.describe())
 
-        # 이상치 탐지 (평균보다 1.5표준편차 이상 낮은 mpg)
-        mean_mpg = df['mpg'].mean()
-        std_mpg = df['mpg'].std()
-        outliers = df[df['mpg'] < mean_mpg - 1.5 * std_mpg]
+    # 연도별 평균 연비
+    st.write("### 📈 연도별 평균 연비")
+    fig, ax = plt.subplots()
+    df.groupby("year")["mpg"].mean().plot(kind="line", marker="o", ax=ax)
+    plt.ylabel("평균 MPG")
+    plt.grid(True)
+    st.pyplot(fig)
 
-        fig, ax = plt.subplots()
-        ax.plot(year_avg['year'], year_avg['mpg'], marker='o', label='연도별 평균 연비')
-        ax.set_xlabel("제조 연도")
-        ax.set_ylabel("평균 연비 (mpg)")
-        ax.set_title("연도별 평균 연비 추이")
-        ax.grid(True)
-        st.pyplot(fig)
+    # 제조사별 평균 연비
+    st.write("### 🏭 제조사별 평균 연비")
+    fig, ax = plt.subplots()
+    df.groupby("make")["mpg"].mean().sort_values().plot(kind="barh", ax=ax, color="skyblue")
+    plt.xlabel("평균 MPG")
+    st.pyplot(fig)
 
-        st.markdown("### 🚨 이상치 요약")
-        st.dataframe(outliers[['year', 'mpg']])
-        st.success(f"총 {len(outliers)}개의 이상치가 감지되었습니다.")
+    # 연비와 배기량의 관계
+    st.write("### ⚙️ 배기량과 연비 관계 (산점도)")
+    fig, ax = plt.subplots()
+    sns.scatterplot(data=df, x="displacement", y="mpg", hue="origin", ax=ax)
+    st.pyplot(fig)
+
+    # 연료 종류별 연비 분포 (박스플롯)
+    st.write("### ⛽ 연료 타입별 연비 분포")
+    fig, ax = plt.subplots()
+    sns.boxplot(data=df, x="fuel_type", y="mpg", ax=ax)
+    st.pyplot(fig)
+
+    # 상관 관계 히트맵
+    st.write("### 🧠 수치 변수 간 상관관계")
+    fig, ax = plt.subplots()
+    sns.heatmap(df.select_dtypes(include="number").corr(), annot=True, cmap="coolwarm", fmt=".2f", ax=ax)
+    st.pyplot(fig)
