@@ -17,8 +17,9 @@ st.markdown("""
 st.set_page_config(page_title="생산라인 병목 시뮬레이션", layout="wide")
 st.title("🏭 생산 라인 병목 시뮬레이션 (업로드 or 시뮬레이션 선택 가능)")
 
-mode = st.radio("분석 모드 선택", ["📂 실제 데이터 업로드", "🧪 시뮬레이션 실행"])
+mode = st.radio("분석 모드 선택", ["📂 실제 데이터 업로드", "🧪 시뮬레이션 실행"], index=0)
 
+# 📂 실제 데이터 업로드
 if mode == "📂 실제 데이터 업로드":
     uploaded_file = st.file_uploader("CSV 파일 업로드 (예: 공정별 처리 시간)", type=["csv"])
 
@@ -38,7 +39,8 @@ if mode == "📂 실제 데이터 업로드":
     else:
         st.warning("CSV 파일을 업로드해주세요. 열 이름은 '공정A', '공정B', '공정C' 등이 포함되어야 합니다.")
 
-else:
+# 🧪 시뮬레이션 모드
+elif mode == "🧪 시뮬레이션 실행":
     col1, col2 = st.columns(2)
     with col1:
         time_A = st.slider("공정 A 처리시간 (분)", 5, 20, 10)
