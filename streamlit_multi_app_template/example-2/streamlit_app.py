@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
+import seaborn as sns 
 
 # 페이지 설정
 st.set_page_config(page_title="생산라인 병목 시뮬레이션", layout="wide")
