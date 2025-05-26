@@ -1,52 +1,66 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-import numpy as np
 
-# ✅ 구글 웹폰트 설정 (Noto Sans KR)
-st.markdown(
-    """
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR&display=swap');
-    html, body, [class*="css"] {
-        font-family: 'Noto Sans KR', sans-serif;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+# 페이지 설정
+st.set_page_config(page_title="생산라인 병목 시뮬레이션", layout="wide")
 
-# 앱 구성 예시
-st.title("🚗 자동차 데이터 연비 분석 (Streamlit + GPT)")
-
+# 제목
+st.title("🏭 생산 라인 병목 시뮬레이션 (Streamlit 인터랙티브)")
 st.markdown("""
-이 앱은 업로드한 CSV 데이터를 기반으로 제조 연도별 평균 연비를 분석하고 시각화합니다.  
-또한 이상치(비정상적으로 낮은 연비)를 감지하여 강조합니다.
+이 시뮬레이션은 공정 A → 공정 B → 공정 C의 연속 작업에서 공정 B의 처리 시간이 전체 생산 시간에 미치는 영향을 분석합니다.
+시나리오 비교를 통해 병목 해결 전략을 시각적으로 비교할 수 있습니다.
 """)
 
-uploaded_file = st.file_uploader("CSV 파일을 업로드하세요", type=["csv"])
-if uploaded_file:
-    df = pd.read_csv(uploaded_file)
+# 사용자 입력 UI
+col1, col2 = st.columns(2)
+with col1:
+    time_A = st.slider("공정 A 처리시간 (분)", 5, 20, 10)
+    time_B_1 = st.slider("공정 B 처리시간 - 시나리오 1 (분)", 5, 30, 20)
+    time_B_2 = st.slider("공정 B 처리시간 - 시나리오 2 (분)", 5, 30, 12)
+    time_C = st.slider("공정 C 처리시간 (분)", 5, 20, 10)
 
-    if 'year' not in df.columns or 'mpg' not in df.columns:
-        st.error("데이터에 'year' 및 'mpg' 열이 포함되어 있어야 합니다.")
-    else:
-        # 연도별 평균 연비 시각화
-        st.subheader("📊 연도별 평균 연비")
-        year_avg = df.groupby('year')['mpg'].mean().reset_index()
+with col2:
+    num_samples = st.number_input("시뮬레이션 반복 횟수", min_value=100, max_value=5000, value=1000)
+    st.markdown("👉 시나리오 1: 공정 B 기본값  \n👉 시나리오 2: 공정 B 개선안", unsafe_allow_html=True)
 
-        fig, ax = plt.subplots()
-        sns.barplot(data=year_avg, x='year', y='mpg', ax=ax, palette="Blues_d")
-        ax.set_title("연도별 평균 연비")
-        ax.set_xlabel("제조 연도")
-        ax.set_ylabel("평균 연비 (mpg)")
-        st.pyplot(fig)
+# 시뮬레이션 함수
+def simulate(time_A, time_B, time_C, n=1000):
+    A = np.random.exponential(time_A, n)
+    B = np.random.exponential(time_B, n)
+    C = np.random.exponential(time_C, n)
+    total_time = A + B + C
+    return total_time
 
-        # 이상치 탐지
-        mean_mpg = df['mpg'].mean()
-        std_mpg = df['mpg'].std()
-        outliers = df[df['mpg'] < mean_mpg - 1.5 * std_mpg]
+# 시뮬레이션 실행
+total_1 = simulate(time_A, time_B_1, time_C, num_samples)
+total_2 = simulate(time_A, time_B_2, time_C, num_samples)
 
-        st.subheader("🚨 이상치 탐지 결과")
-        st.dataframe(outliers)
+# 데이터프레임 생성
+df_result = pd.DataFrame({
+    f"시나리오 1 (B = {time_B_1}분)": total_1,
+    f"시나리오 2 (B = {time_B_2}분)": total_2
+})
+
+# 시각화: 분포 그래프
+st.subheader("⏱️ 전체 생산 시간 분포 비교")
+fig, ax = plt.subplots(figsize=(10, 5))
+for col in df_result.columns:
+    sns.kdeplot(df_result[col], label=col, fill=True, ax=ax)
+ax.set_xlabel("총 생산 시간 (분)")
+ax.set_ylabel("밀도")
+ax.set_title("시나리오별 생산 시간 분포")
+ax.legend()
+st.pyplot(fig)
+
+# 통계 요약 테이블
+st.subheader("📊 시나리오 비교 요약")
+summary = df_result.describe().T[["mean", "std", "min", "max"]].rename(columns={
+    "mean": "평균",
+    "std": "표준편차",
+    "min": "최소값",
+    "max": "최대값"
+})
+st.dataframe(summary)
