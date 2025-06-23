@@ -2,7 +2,7 @@ streamlit
 pandas
 numpy==1.26.4
 matplotlib
-torch==2.2.2          # CPU wheel
+torch==2.2.2
 captum==0.7.0
 shap==0.45.0
-scikit-image==0.22.0  # shap 플롯 의존
+scikit-image==0.22.0
