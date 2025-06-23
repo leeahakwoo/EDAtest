@@ -7,6 +7,9 @@ import torch, torch.nn as nn, torch.nn.functional as F
 import pandas as pd, matplotlib.pyplot as plt, numpy as np
 from captum.attr import IntegratedGradients
 import shap
+import sys
+
+st.write("현재 Python 버전:", sys.version)
 
 # 1. 모델 클래스 ──────────────────────────────────
 class IrisNet(nn.Module):
