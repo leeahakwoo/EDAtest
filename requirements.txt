@@ -4,9 +4,8 @@ numpy
 matplotlib
 seaborn
 plotly
-torch
-torchvision
-captum
+torch==2.2.2         # 3.11용 최신 안정버전
+torchvision==0.17.2
+captum==0.7.0
 pillow
-shap         # ← 새로 추가
-python-3.11.8
+shap==0.45.0          # 3.11에서 휠 제공
