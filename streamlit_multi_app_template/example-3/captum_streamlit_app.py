@@ -1,11 +1,10 @@
-# captum_streamlit_app.py  ───────────────
 import streamlit as st
 import torch, torch.nn as nn, torch.nn.functional as F
 import pandas as pd, numpy as np, matplotlib.pyplot as plt
 from captum.attr import IntegratedGradients
 import shap
 
-# ── 1. 모델 ─────────────────────────────
+# ── 모델 정의 ───────────────────────────────
 class IrisNet(nn.Module):
     def __init__(self):
         super().__init__()
@@ -15,11 +14,11 @@ class IrisNet(nn.Module):
 
 FEATURE_NAMES = ["SepLen", "SepWid", "PetLen", "PetWid"]
 
-# ── 2. 페이지 ───────────────────────────
+# ── Streamlit 설정 ──────────────────────────
 st.set_page_config(page_title="범용 XAI 진단", layout="centered")
 st.title("🧠 범용 XAI 진단 도구")
 
-# ── 3. 모델 업로드 ───────────────────────
+# ── 1. 모델 업로드 ──────────────────────────
 up_model = st.file_uploader("📂 PyTorch state_dict (.pt)", type=["pt"])
 model = None
 if up_model:
@@ -28,8 +27,8 @@ if up_model:
     model.load_state_dict(sd); model.eval()
     st.success("✅ 모델 로드 완료")
 
-# ── 4. CSV 업로드 ────────────────────────
-up_csv = st.file_uploader("📄 CSV (숫자 4열)", type=["csv"])
+# ── 2. CSV 업로드 ───────────────────────────
+up_csv = st.file_uploader("📄 CSV (숫자 4열, 헤더 허용)", type=["csv"])
 if up_csv:
     df = pd.read_csv(up_csv)
     if df.shape[1] > 4: df = df.iloc[:, :4]
@@ -37,33 +36,30 @@ if up_csv:
     tensor = torch.tensor(df.values, dtype=torch.float32)
     if tensor.ndim == 1: tensor = tensor.view(1, -1)
 
-# ── 5. 예측 + IG + SHAP ──────────────────
+# ── 3. 예측 + IG + SHAP ─────────────────────
 if model and up_csv:
     pred = torch.argmax(model(tensor), 1)
-
     st.markdown("### ✅ 예측 결과")
     st.write(pred.numpy())
 
     # (A) Integrated Gradients
     ig = IntegratedGradients(model)
     attr, _ = ig.attribute(tensor, target=pred, return_convergence_delta=True)
-
     fig, ax = plt.subplots(figsize=(7, 4))
     im = ax.imshow(attr.detach().numpy(), aspect="auto", cmap="hot")
     ax.set_xticks(range(4)); ax.set_xticklabels(FEATURE_NAMES, rotation=45, ha="right")
     ax.set_ylabel("샘플 index"); fig.colorbar(im, ax=ax)
     st.pyplot(fig)
 
-    # (B) SHAP 전역 중요도  – GradientExplainer
+    # (B) SHAP 글로벌 중요도 (GradientExplainer)
     st.markdown("## 📊 SHAP 글로벌 중요도")
-    gexpl = shap.GradientExplainer(model, tensor)
-    shap_list = gexpl.shap_values(tensor)   # list[출력클래스] → ndarray
-    shap_vals = shap_list[0]                # 1-클래스 모델이므로 [0] 선택
+    expl = shap.GradientExplainer(model, tensor)
+    shap_list = expl.shap_values(tensor)           # list[num_classes][N, 4]
+    shap_arr  = np.stack(shap_list, axis=0)        # shape: [C, N, 4]
+    mean_abs  = np.mean(np.abs(shap_arr), axis=(0, 1))   # 길이 = 4
 
-    mean_abs = np.mean(np.abs(shap_vals), axis=0)      # len == 4
-    shap_df  = pd.DataFrame(
-        {"feature": FEATURE_NAMES, "mean_abs": mean_abs}
-    ).sort_values("mean_abs", ascending=True)
+    shap_df = pd.DataFrame({"feature": FEATURE_NAMES, "mean_abs": mean_abs}) \
+                .sort_values("mean_abs", ascending=True)
 
     fig2, ax2 = plt.subplots(figsize=(6, 3))
     ax2.barh(shap_df["feature"], shap_df["mean_abs"])
