@@ -1,8 +1,11 @@
+# --- 핵심 ---
 streamlit
 pandas
-numpy==1.26.4            # ← NumPy 1.x 로 다운그레이드
+numpy==1.26.4          # ← 반드시 1.x 로 ‘한 줄만’!
 matplotlib
-torch==2.2.2+cpu
+
+# --- 모델 & XAI ---
+torch==2.2.2+cpu       # 45 MB CPU wheel, GPU 패키지 3 GB 방지
 captum==0.7.0
 shap==0.45.0
-scikit-image==0.22.0     # shap 플롯 내부에서 사용
+scikit-image==0.22.0   # shap 내부 플롯에서 필요
