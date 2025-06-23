@@ -17,42 +17,38 @@ class IrisNet(nn.Module):
     def forward(self, x):
         return self.fc2(F.relu(self.fc1(x)))
 
-# 모델 로딩
-model = IrisNet()
-state_dict = torch.load(uploaded_model, map_location=torch.device("cpu"))
-model.load_state_dict(state_dict)
-model.eval()
-
-# 2. 앱 설정
+# 앱 설정
 st.set_page_config(page_title="범용 XAI 진단 도구", layout="centered")
 st.title("🧠 범용 XAI 진단 도구")
 st.markdown("PyTorch 모델 (.pt)과 CSV 입력 데이터를 함께 업로드하면 예측과 XAI 시각화를 제공합니다.")
 
-# 3. 모델 업로드
+# 1. 모델 업로드
 uploaded_model = st.file_uploader("📂 PyTorch 모델 업로드 (.pt)", type=["pt"])
 model = None
 
 if uploaded_model is not None:
     try:
         model = IrisNet()
-        model.load_state_dict(torch.load(uploaded_model, map_location=torch.device("cpu")))
+        state_dict = torch.load(uploaded_model, map_location=torch.device("cpu"))
+        model.load_state_dict(state_dict)
         model.eval()
         st.success("✅ 모델 로딩 완료!")
     except Exception as e:
         st.error(f"❌ 모델 로딩 실패: {e}")
 
-# 4. 입력 CSV 업로드
+# 2. 입력 CSV 업로드
 uploaded_csv = st.file_uploader("📄 CSV 입력 데이터 업로드", type=["csv"])
 
 if uploaded_csv is not None:
     try:
         df = pd.read_csv(uploaded_csv)
+        st.markdown("### 📊 업로드된 입력 데이터")
         st.dataframe(df.head())
         input_tensor = torch.tensor(df.values, dtype=torch.float32)
     except Exception as e:
         st.error(f"❌ CSV 처리 오류: {e}")
 
-# 5. 예측 + Captum XAI
+# 3. 예측 + Captum XAI 실행
 if uploaded_model and uploaded_csv and model:
     with torch.no_grad():
         pred = model(input_tensor)
