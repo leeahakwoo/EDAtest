@@ -8,4 +8,4 @@ torch
 torchvision
 captum
 pillow
-shap
+shap         # ← 새로 추가
