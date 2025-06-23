@@ -1,11 +1,12 @@
 streamlit
 pandas
-numpy                #  3.11 휠 존재
+numpy
 matplotlib
 seaborn
-plotly
-torch==2.2.2         #  3.11 에서 안정
+plotly==5.19.0     # 최신 안정 + kaleido 지원
+kaleido==0.2.1
+torch==2.2.2
 torchvision==0.17.2
 captum==0.7.0
 pillow
-shap==0.45.0         #  3.11 용 미리컴파일 휠
+shap==0.45.0       # 3.11 휠 존재
