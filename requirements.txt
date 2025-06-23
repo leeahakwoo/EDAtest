@@ -4,3 +4,7 @@ numpy
 matplotlib
 seaborn
 plotly
+torch
+torchvision
+captum
+pillow
