@@ -7,14 +7,21 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from captum.attr import IntegratedGradients
 
-# 1. IrisNet 클래스 정의
+# 모델 클래스 정의
 class IrisNet(nn.Module):
     def __init__(self):
         super(IrisNet, self).__init__()
         self.fc1 = nn.Linear(4, 16)
         self.fc2 = nn.Linear(16, 3)
+
     def forward(self, x):
         return self.fc2(F.relu(self.fc1(x)))
+
+# 모델 로딩
+model = IrisNet()
+state_dict = torch.load(uploaded_model, map_location=torch.device("cpu"))
+model.load_state_dict(state_dict)
+model.eval()
 
 # 2. 앱 설정
 st.set_page_config(page_title="범용 XAI 진단 도구", layout="centered")
