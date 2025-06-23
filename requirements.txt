@@ -1,10 +1,8 @@
-# ───── 필수 런타임 ─────
-streamlit          # 웹 앱 프레임워크
-pandas             # CSV 처리
-numpy              # 수치 연산
-matplotlib         # 그래프 (IG·SHAP 시각화)
-
-# ───── 모델 / XAI ─────
-torch==2.2.2       # CPU 버전; 3.11 휠 제공
-captum==0.7.0      # Integrated Gradients 등
-shap==0.45.0       # SHAP 값 계산 (3.11 휠 제공)
+streamlit
+pandas
+numpy==1.26.4            # ← NumPy 1.x 로 다운그레이드
+matplotlib
+torch==2.2.2+cpu
+captum==0.7.0
+shap==0.45.0
+scikit-image==0.22.0     # shap 플롯 내부에서 사용
