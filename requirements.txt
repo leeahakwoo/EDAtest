@@ -1,3 +1,6 @@
+runtime.txt      →  python-3.11
+
+requirements.txt →
 streamlit
 pandas
 numpy==1.26.4
