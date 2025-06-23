@@ -1,8 +1,8 @@
 streamlit
 pandas
-numpy==1.26.4          # NumPy 1.x로 고정  → shap 호환
+numpy==1.26.4
 matplotlib
-torch==2.2.2           # “+cpu” 제거  (기본이 CPU wheel)
+torch==2.2.2          # CPU wheel
 captum==0.7.0
-scikit-image==0.22.0   # shap 내부 plot 의존
 shap==0.45.0
+scikit-image==0.22.0  # shap 플롯 의존
