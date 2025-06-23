@@ -1,74 +1,101 @@
-# captum_streamlit_demo.py
 
 import streamlit as st
 import torch
 import torch.nn as nn
-import torchvision.transforms as transforms
+import pandas as pd
 from PIL import Image
+import torchvision.transforms as transforms
 from captum.attr import IntegratedGradients
 import matplotlib.pyplot as plt
+import numpy as np
 
 # ---------------------
-# 모델 정의
+# 모델 업로드
 # ---------------------
-class SimpleNet(nn.Module):
-    def __init__(self):
-        super(SimpleNet, self).__init__()
-        self.fc1 = nn.Linear(28*28, 128)
-        self.relu = nn.ReLU()
-        self.fc2 = nn.Linear(128, 10)
-
-    def forward(self, x):
-        x = x.view(-1, 28*28)
-        x = self.relu(self.fc1(x))
-        return self.fc2(x)
-
 @st.cache_resource
-def load_model():
-    model = SimpleNet()
-    model.eval()
-    return model
+def load_model(uploaded_file):
+    try:
+        model = torch.load(uploaded_file, map_location=torch.device("cpu"))
+        if not isinstance(model, nn.Module):
+            raise ValueError("이 파일은 모델 클래스 정의를 포함하지 않습니다.")
+        model.eval()
+        return model
+    except Exception as e:
+        st.error(f"모델 로딩 실패: {e}")
+        return None
 
 # ---------------------
-# 이미지 처리 함수
+# 이미지 전처리
 # ---------------------
 def preprocess_image(image):
-    image = image.convert('L').resize((28, 28))  # 흑백 변환 + 28x28
-    image_tensor = transforms.ToTensor()(image).unsqueeze(0)
-    return image_tensor
-
-def show_attribution_map(attributions):
-    attr = attributions.squeeze().detach().numpy()
-    fig, ax = plt.subplots()
-    ax.imshow(attr, cmap='hot')
-    ax.axis('off')
-    st.pyplot(fig)
+    image = image.convert('L').resize((28, 28))
+    return transforms.ToTensor()(image).unsqueeze(0)
 
 # ---------------------
-# Streamlit 앱 시작
+# 표형 데이터 전처리
 # ---------------------
-st.title("🧠 Captum XAI 데모 (Streamlit)")
-st.markdown("PyTorch 모델에 대해 Integrated Gradients로 **설명가능성 시각화**를 수행합니다.")
+def preprocess_tabular(df):
+    return torch.tensor(df.values, dtype=torch.float32)
 
-uploaded_file = st.file_uploader("🎨 손글씨 이미지 업로드 (MNIST 스타일, 흑백)", type=["png", "jpg", "jpeg"])
+# ---------------------
+# Captum 시각화
+# ---------------------
+def show_attribution_map(attributions, input_tensor, data_type):
+    if data_type == "이미지":
+        attr = attributions.squeeze().detach().numpy()
+        fig, ax = plt.subplots()
+        ax.imshow(attr, cmap='hot')
+        ax.axis('off')
+        st.pyplot(fig)
+    elif data_type == "표형 데이터 (CSV)":
+        attr = attributions.squeeze().detach().numpy()
+        df_attr = pd.DataFrame(attr.reshape(1, -1), columns=[f"feature_{i}" for i in range(attr.shape[0])])
+        st.bar_chart(df_attr.T)
 
-if uploaded_file:
-    image = Image.open(uploaded_file)
-    st.image(image, caption="입력 이미지", width=150)
+# ---------------------
+# Streamlit 앱 UI
+# ---------------------
+st.set_page_config(page_title="범용 XAI 분석 도구", page_icon="🧠")
+st.title("🧠 범용 XAI 진단 도구")
 
-    input_tensor = preprocess_image(image)
-    model = load_model()
+# 모델 업로드
+model_file = st.file_uploader("📦 PyTorch 모델 업로드 (.pt/.pth)", type=["pt", "pth"])
+model = load_model(model_file) if model_file else None
 
-    with torch.no_grad():
-        output = model(input_tensor)
-        pred_label = torch.argmax(output, dim=1).item()
+# 입력 데이터 업로드
+data_type = st.selectbox("입력 데이터 유형 선택", ["이미지", "표형 데이터 (CSV)"])
 
-    st.write(f"✅ 모델 예측 결과: **{pred_label}**")
+if data_type == "이미지":
+    uploaded_image = st.file_uploader("🖼️ 이미지 업로드", type=["png", "jpg", "jpeg"])
+    if uploaded_image and model:
+        image = Image.open(uploaded_image)
+        st.image(image, caption="입력 이미지", width=150)
+        input_tensor = preprocess_image(image)
+        with torch.no_grad():
+            output = model(input_tensor)
+        pred = torch.argmax(output, dim=1).item()
+        st.success(f"✅ 모델 예측 결과: {pred}")
 
-    ig = IntegratedGradients(model)
-    attributions, _ = ig.attribute(input_tensor, target=pred_label, return_convergence_delta=True)
+        ig = IntegratedGradients(model)
+        attr, _ = ig.attribute(input_tensor, target=pred, return_convergence_delta=True)
+        st.subheader("🧭 Integrated Gradients 시각화")
+        show_attribution_map(attr, input_tensor, data_type)
 
-    st.subheader("🧭 Integrated Gradients 시각화")
-    show_attribution_map(attributions)
-else:
-    st.info("🖼 이미지를 업로드하면 예측과 XAI 결과를 확인할 수 있어요!")
+elif data_type == "표형 데이터 (CSV)":
+    uploaded_csv = st.file_uploader("📄 CSV 파일 업로드", type=["csv"])
+    if uploaded_csv and model:
+        try:
+            df = pd.read_csv(uploaded_csv)
+            st.dataframe(df.head())
+            input_tensor = preprocess_tabular(df.iloc[0:1])
+            with torch.no_grad():
+                output = model(input_tensor)
+            pred = torch.argmax(output, dim=1).item()
+            st.success(f"✅ 모델 예측 결과: {pred}")
+
+            ig = IntegratedGradients(model)
+            attr, _ = ig.attribute(input_tensor, target=pred, return_convergence_delta=True)
+            st.subheader("🧭 Integrated Gradients 시각화")
+            show_attribution_map(attr, input_tensor, data_type)
+        except Exception as e:
+            st.error(f"❌ 입력 또는 예측 처리 실패: {e}")
