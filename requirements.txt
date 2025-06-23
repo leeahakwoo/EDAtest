@@ -1,11 +1,11 @@
 streamlit
 pandas
-numpy
+numpy                #  3.11 휠 존재
 matplotlib
 seaborn
 plotly
-torch==2.2.2         # 3.11용 최신 안정버전
+torch==2.2.2         #  3.11 에서 안정
 torchvision==0.17.2
 captum==0.7.0
 pillow
-shap==0.45.0          # 3.11에서 휠 제공
+shap==0.45.0         #  3.11 용 미리컴파일 휠
