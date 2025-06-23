@@ -9,3 +9,4 @@ torchvision
 captum
 pillow
 shap         # ← 새로 추가
+python-3.11.8
